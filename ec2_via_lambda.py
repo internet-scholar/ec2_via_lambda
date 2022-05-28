@@ -1,15 +1,18 @@
 import boto3
 from urllib.parse import urlparse
 import json
+import uuid
 
 
 INIT_SCRIPT = """#!/bin/bash
 cd /home/ubuntu
 su ubuntu -c 'mkdir .aws'
 su ubuntu -c 'printf "[default]\\nregion={region}" > /home/ubuntu/.aws/config'
-su ubuntu -c 'wget {init_script}'
-su ubuntu -c 'chmod +x init_script.sh'
-su ubuntu -c './init_script.sh {s3_config}'"""
+su ubuntu -c 'wget {init_script} -O {new_name}'
+su ubuntu -c 'chmod +x {new_name}'
+su ubuntu -c "echo '/home/ubuntu/{new_name} {parameters}' > call.txt"
+su ubuntu -c "screen -dmS internet_scholar sh -c '/home/ubuntu/{new_name} {s3_config} 2>&1 | tee output.txt; exec bash'"
+"""
 
 
 def lambda_handler(event, context):
@@ -19,9 +22,11 @@ def lambda_handler(event, context):
     file_content = content_object.get()['Body'].read().decode('utf-8')
     config = json.loads(file_content)
 
+    new_name = f"{uuid.uuid4()}.sh"
     init_script = INIT_SCRIPT.format(init_script=config['aws']['init_script'],
                                      region=config['aws']['default_region'],
-                                     s3_config=event['s3_config'])
+                                     s3_config=event['s3_config'],
+                                     new_name=new_name)
 
     ec2 = boto3.resource('ec2')
     ec2.create_instances(
