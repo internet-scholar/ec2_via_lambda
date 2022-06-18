@@ -11,6 +11,8 @@ su ubuntu -c 'printf "[default]\\nregion={region}" > /home/ubuntu/.aws/config'
 su ubuntu -c 'wget {init_script} -O {new_name}'
 su ubuntu -c 'chmod +x {new_name}'
 su ubuntu -c "echo '/home/ubuntu/{new_name} {s3_config}' > call.txt"
+su ubuntu -c 'sudo apt-get update'
+su ubuntu -c 'sudo apt-get install -y screen'
 su ubuntu -c "screen -dmS internet_scholar sh -c '/home/ubuntu/{new_name} {s3_config} 2>&1 | tee output.txt; exec bash'"
 """
 
